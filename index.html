@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>超级便签</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- 引入字体图标库 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>超级便签</h1>
+            <div class="header-actions">
+                <button id="share-note" class="action-btn" title="分享便签"><i class="bi bi-share"></i></button>
+                <div class="theme-switcher">
+                    <button id="theme-toggle" title="更换皮肤"><i class="bi bi-palette"></i></button>
+                </div>
+            </div>
+
+            <!-- 皮肤选择面板 -->
+            <div id="theme-panel" class="theme-panel">
+                <div class="theme-panel-header">
+                    <h3>选择皮肤</h3>
+                    <button id="close-theme-panel" class="close-btn"><i class="bi bi-x"></i></button>
+                </div>
+                <div class="theme-list">
+                    <div class="theme-item" data-theme="light">
+                        <div class="theme-preview light-theme">
+                            <div class="preview-header"></div>
+                            <div class="preview-content"></div>
+                        </div>
+                        <span>浅色</span>
+                    </div>
+                    <div class="theme-item" data-theme="dark">
+                        <div class="theme-preview dark-theme">
+                            <div class="preview-header"></div>
+                            <div class="preview-content"></div>
+                        </div>
+                        <span>深色</span>
+                    </div>
+                    <div class="theme-item" data-theme="sepia">
+                        <div class="theme-preview sepia-theme">
+                            <div class="preview-header"></div>
+                            <div class="preview-content"></div>
+                        </div>
+                        <span>护眼</span>
+                    </div>
+                    <div class="theme-item" data-theme="forest">
+                        <div class="theme-preview forest-theme">
+                            <div class="preview-header"></div>
+                            <div class="preview-content"></div>
+                        </div>
+                        <span>森林</span>
+                    </div>
+                    <div class="theme-item" data-theme="ocean">
+                        <div class="theme-preview ocean-theme">
+                            <div class="preview-header"></div>
+                            <div class="preview-content"></div>
+                        </div>
+                        <span>海洋</span>
+                    </div>
+                    <div class="theme-item" data-theme="sunset">
+                        <div class="theme-preview sunset-theme">
+                            <div class="preview-header"></div>
+                            <div class="preview-content"></div>
+                        </div>
+                        <span>日落</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分享对话框 -->
+            <div id="share-dialog" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>分享便签</h3>
+                        <button id="close-share-dialog" class="close-btn"><i class="bi bi-x"></i></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="share-options">
+                            <button id="copy-text" class="share-btn">
+                                <i class="bi bi-clipboard"></i>
+                                <span>复制文本</span>
+                            </button>
+                            <button id="copy-html" class="share-btn">
+                                <i class="bi bi-code-slash"></i>
+                                <span>复制HTML</span>
+                            </button>
+                            <button id="copy-markdown" class="share-btn">
+                                <i class="bi bi-markdown"></i>
+                                <span>复制Markdown</span>
+                            </button>
+                            <button id="save-image" class="share-btn">
+                                <i class="bi bi-image"></i>
+                                <span>保存为图片</span>
+                            </button>
+                        </div>
+                        <div id="share-preview" class="share-preview">
+                            <div id="preview-content"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="toolbar">
+            <button class="tool-btn" data-command="bold" title="加粗"><i class="bi bi-type-bold"></i></button>
+            <button class="tool-btn" data-command="italic" title="斜体"><i class="bi bi-type-italic"></i></button>
+            <button class="tool-btn" data-command="heading" title="标题"><i class="bi bi-type-h1"></i></button>
+            <button class="tool-btn" data-command="list-ul" title="无序列表"><i class="bi bi-list-ul"></i></button>
+            <button class="tool-btn" data-command="list-ol" title="有序列表"><i class="bi bi-list-ol"></i></button>
+            <button class="tool-btn" data-command="link" title="链接"><i class="bi bi-link"></i></button>
+            <button class="tool-btn" data-command="code" title="代码"><i class="bi bi-code"></i></button>
+            <button class="tool-btn" data-command="emoji" title="表情符号"><i class="bi bi-emoji-smile"></i></button>
+            <button class="tool-btn" data-command="image" title="插入图片"><i class="bi bi-image"></i></button>
+        </div>
+
+        <!-- Emoji选择器 -->
+        <div id="emoji-picker" class="emoji-picker">
+            <div class="emoji-picker-header">
+                <span>选择表情符号</span>
+                <button id="close-emoji-picker" class="close-btn"><i class="bi bi-x"></i></button>
+            </div>
+            <div class="emoji-categories">
+                <button data-category="smileys" class="active">😀</button>
+                <button data-category="people">👋</button>
+                <button data-category="animals">🐱</button>
+                <button data-category="food">🍎</button>
+                <button data-category="travel">🚗</button>
+                <button data-category="activities">⚽</button>
+                <button data-category="objects">💡</button>
+                <button data-category="symbols">❤️</button>
+                <button data-category="flags">🏁</button>
+            </div>
+            <div class="emoji-search">
+                <input type="text" placeholder="搜索表情符号..." id="emoji-search-input">
+            </div>
+            <div class="emoji-list" id="emoji-list">
+                <!-- Emoji将通过JavaScript动态生成 -->
+            </div>
+        </div>
+
+        <!-- 图片上传对话框 -->
+        <div id="image-upload-dialog" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>插入图片</h3>
+                    <button id="close-image-dialog" class="close-btn"><i class="bi bi-x"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="upload-tabs">
+                        <button class="tab-btn active" data-tab="upload">上传图片</button>
+                        <button class="tab-btn" data-tab="url">图片URL</button>
+                    </div>
+                    <div class="tab-content" id="upload-tab">
+                        <div class="upload-area" id="upload-area">
+                            <i class="bi bi-cloud-arrow-up"></i>
+                            <p>拖放图片到这里或点击上传</p>
+                            <input type="file" id="image-file-input" accept="image/*" style="display: none;">
+                        </div>
+                        <div class="image-preview" id="image-preview">
+                            <img id="preview-image" src="" alt="预览">
+                            <button id="remove-image" class="remove-btn"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="tab-content" id="url-tab" style="display: none;">
+                        <input type="text" id="image-url-input" placeholder="输入图片URL..." class="full-width">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancel-image" class="action-btn">取消</button>
+                    <button id="insert-image" class="action-btn primary">插入</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="note-container">
+            <div id="editor" class="note-editor" contenteditable="true" placeholder="开始输入便签内容..."></div>
+        </div>
+
+        <div class="action-bar">
+            <button id="new-note" class="action-btn"><i class="bi bi-plus-lg"></i> 新建</button>
+            <button id="save-note" class="action-btn primary"><i class="bi bi-save"></i> 保存</button>
+        </div>
+
+        <div class="note-list-container">
+            <h2>我的便签</h2>
+            <div id="note-list" class="note-list">
+                <!-- 便签列表将通过JavaScript动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/markdown.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
