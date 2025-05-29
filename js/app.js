@@ -61,17 +61,20 @@ function initApp() {
 }
 
 // emoji数据
+
+
 const emojiData = {
     smileys: ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘'],
-    people: ['�', '🤚', '�', '✋', '🖖', '�', '🤌', '🤏', '✌', '🤞', '🫰', '🤟', '🤘', '🤙', '👈', '👉'],
-    animals: ['🐱', '🐶', '�', '�', '�', '🦊', '�', '🐼', '🐨', '�', '🦁', '🐮', '🐷', '�', '�', '�'],
-    food: ['�', '🍐', '�', '�', '�', '�', '�', '�', '🫐', '�', '�', '�', '🥭', '�', '🥥', '🥝'],
+    people: ['👋', '🤚', '👌', '✋', '🖖', '👍', '🤏', '✌', '🤞', '🤟', '🤘', '🤙', '👈', '👉'],
+    animals: ['🐱', '🐶', '🐭', '🐹', '🐰', '🦊', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧'],
+    food: ['🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝'],
     travel: ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎', '🚓', '🚑', '🚒', '🚐', '🛻', '🚚', '🚛', '🚜', '🛵', '🏍'],
     activities: ['⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍'],
     objects: ['💡', '🔦', '🕯', '🪔', '🧯', '🛢', '💸', '💵', '💴', '💶', '💷', '💰', '💳', '💎', '⚖', '🪜'],
     symbols: ['❤', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❤️‍🔥', '❤️‍🩹', '❣', '💕', '💞', '💓'],
     flags: ['🏁', '🚩', '🎌', '🏴', '🏳', '🏳️‍🌈', '🏳️‍⚧️', '🏴‍☠️', '🇦🇨', '🇦🇩', '🇦🇪', '🇦🇫', '🇦🇬', '🇦🇮', '🇦🇱', '🇦🇲']
 };
+    
 
 // 设置事件监听器
 function setupEventListeners() {
@@ -133,6 +136,12 @@ function setupEventListeners() {
                 saveNotesToStorage();
             }
         }
+        
+        // 保存当前选区
+        if (window.getSelection().rangeCount > 0) {
+            savedEditorSelection = saveSelection(editor);
+            console.log('输入时保存选区位置');
+        }
     }, 500));
     
     // 编辑器键盘事件，处理Tab键
@@ -140,6 +149,33 @@ function setupEventListeners() {
         if (e.key === 'Tab') {
             e.preventDefault();
             document.execCommand('insertHTML', false, '&nbsp;&nbsp;&nbsp;&nbsp;');
+        }
+    });
+
+    // 编辑器焦点事件
+    editor.addEventListener('focus', () => {
+        // 获取焦点时保存选区
+        if (window.getSelection().rangeCount > 0) {
+            savedEditorSelection = saveSelection(editor);
+            console.log('编辑器获得焦点，保存选区位置');
+        }
+    });
+
+    // 编辑器点击事件
+    editor.addEventListener('click', () => {
+        // 点击时保存选区
+        if (window.getSelection().rangeCount > 0) {
+            savedEditorSelection = saveSelection(editor);
+            console.log('点击编辑器，保存选区位置');
+        }
+    });
+
+    // 编辑器选择事件
+    editor.addEventListener('select', () => {
+        // 选择文本时保存选区
+        if (window.getSelection().rangeCount > 0) {
+            savedEditorSelection = saveSelection(editor);
+            console.log('选择文本，保存选区位置');
         }
     });
 }
@@ -317,9 +353,16 @@ function setupEmojiPicker() {
     console.log('Emoji选择器元素已找到，设置事件监听器...');
 
     // 关闭Emoji选择器
-    closeEmojiBtn.addEventListener('click', () => {
+    closeEmojiBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // 阻止事件冒泡
         console.log('关闭Emoji选择器');
         emojiPicker.classList.remove('active');
+        editor.focus(); // 恢复编辑器焦点
+    });
+
+    // 阻止Emoji选择器内的点击事件冒泡
+    emojiPicker.addEventListener('click', (e) => {
+        e.stopPropagation();
     });
 
     // 点击外部关闭Emoji选择器
@@ -329,12 +372,14 @@ function setupEmojiPicker() {
             !e.target.closest('[data-command="emoji"]')) {
             console.log('点击外部，关闭Emoji选择器');
             emojiPicker.classList.remove('active');
+            editor.focus(); // 恢复编辑器焦点
         }
     });
 
     // 切换分类
     categoryButtons.forEach(button => {
-        button.addEventListener('click', () => {
+        button.addEventListener('click', (e) => {
+            e.stopPropagation(); // 阻止事件冒泡
             const category = button.getAttribute('data-category');
             console.log('切换Emoji分类:', category);
             categoryButtons.forEach(btn => btn.classList.remove('active'));
@@ -344,7 +389,8 @@ function setupEmojiPicker() {
     });
 
     // 搜索Emoji
-    emojiSearchInput.addEventListener('input', debounce(() => {
+    emojiSearchInput.addEventListener('input', debounce((e) => {
+        e.stopPropagation(); // 阻止事件冒泡
         const searchTerm = emojiSearchInput.value.toLowerCase();
         console.log('搜索Emoji:', searchTerm);
         if (searchTerm) {
@@ -357,6 +403,11 @@ function setupEmojiPicker() {
             renderEmojiList('smileys');
         }
     }, 300));
+
+    // 防止搜索框的键盘事件影响编辑器
+    emojiSearchInput.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+    });
 
     console.log('Emoji选择器设置完成');
 }
@@ -386,18 +437,48 @@ function renderEmojiList(category, customEmojis = null) {
         emojiItem.className = 'emoji-item';
         emojiItem.textContent = emoji;
         emojiItem.title = emoji;
-        emojiItem.addEventListener('click', () => {
+        
+        // 添加点击事件处理
+        emojiItem.addEventListener('click', (e) => {
+            e.stopPropagation(); // 阻止事件冒泡
+            e.preventDefault(); // 阻止默认行为
+            
             console.log('选择Emoji:', emoji);
+            
+            // 在插入表情之前保存当前选区
+            if (window.getSelection().rangeCount > 0) {
+                savedEditorSelection = saveSelection(editor);
+                console.log('保存当前选区位置');
+            }
+            
+            // 插入表情
             insertEmoji(emoji);
             
+            // 关闭选择器
             const emojiPicker = document.getElementById('emoji-picker');
             if (emojiPicker) {
                 emojiPicker.classList.remove('active');
             }
+            
+            // 恢复编辑器焦点
+            editor.focus();
         });
+        
+        // 添加鼠标悬停效果
+        emojiItem.addEventListener('mouseenter', () => {
+            emojiItem.style.backgroundColor = 'var(--hover-color)';
+        });
+        
+        emojiItem.addEventListener('mouseleave', () => {
+            emojiItem.style.backgroundColor = '';
+        });
+        
         emojiList.appendChild(emojiItem);
     });
 }
+
+// 全局变量，用于保存选区
+let savedEditorSelection = null;
 
 // 切换Emoji选择器显示状态
 function toggleEmojiPicker() {
@@ -406,53 +487,252 @@ function toggleEmojiPicker() {
         console.error('Emoji选择器元素未找到');
         return;
     }
-    
-    emojiPicker.classList.toggle('active');
-    console.log('Emoji选择器状态已切换:', emojiPicker.classList.contains('active'));
-    
-    // 如果打开了选择器，确保第一个分类被选中
-    if (emojiPicker.classList.contains('active')) {
+
+    // 切换选择器显示状态
+    const isActive = emojiPicker.classList.toggle('active');
+    console.log('Emoji选择器状态已切换:', isActive);
+
+    if (isActive) {
+        // 如果是显示选择器，保存当前选区
+        try {
+            if (window.getSelection().rangeCount > 0) {
+                savedEditorSelection = saveSelection(editor);
+                console.log('已保存编辑器选区位置');
+            }
+        } catch (e) {
+            console.error('保存选区失败:', e);
+        }
+
+        // 确保第一个分类被选中
         const firstCategory = document.querySelector('.emoji-categories button');
         if (firstCategory) {
             firstCategory.click();
+        }
+    } else {
+        // 如果是隐藏选择器，恢复编辑器焦点
+        editor.focus();
+        
+        // 尝试恢复之前保存的选区
+        if (savedEditorSelection) {
+            try {
+                restoreSelection(editor, savedEditorSelection);
+                console.log('已恢复编辑器选区位置');
+            } catch (e) {
+                console.error('恢复选区失败:', e);
+            }
+        }
+    }
+}
+
+// 保存选区位置
+function saveSelection(containerEl) {
+    try {
+        const selection = window.getSelection();
+        if (selection.rangeCount === 0) {
+            return null;
+        }
+        
+        const range = selection.getRangeAt(0);
+        
+        // 检查选区是否在编辑器内
+        let container = range.commonAncestorContainer;
+        let isInEditor = false;
+        
+        while (container) {
+            if (container === containerEl) {
+                isInEditor = true;
+                break;
+            }
+            container = container.parentNode;
+        }
+        
+        if (!isInEditor) {
+            console.log('选区不在编辑器内，不保存选区');
+            return null;
+        }
+        
+        // 保存选区信息
+        return {
+            startContainer: range.startContainer,
+            startOffset: range.startOffset,
+            endContainer: range.endContainer,
+            endOffset: range.endOffset,
+            collapsed: range.collapsed
+        };
+    } catch (e) {
+        console.error('保存选区失败:', e);
+        return null;
+    }
+}
+
+// 恢复选区位置
+function restoreSelection(containerEl, savedSel) {
+    if (!savedSel) {
+        console.log('没有保存的选区可恢复');
+        return false;
+    }
+    
+    try {
+        const selection = window.getSelection();
+        const range = document.createRange();
+        
+        // 设置选区范围
+        range.setStart(savedSel.startContainer, savedSel.startOffset);
+        
+        if (savedSel.collapsed) {
+            range.collapse(true);
+        } else {
+            range.setEnd(savedSel.endContainer, savedSel.endOffset);
+        }
+        
+        // 应用选区
+        selection.removeAllRanges();
+        selection.addRange(range);
+        console.log('选区已成功恢复');
+        return true;
+    } catch (e) {
+        console.error('恢复选区失败:', e);
+        
+        // 如果恢复失败，尝试将光标放在编辑器末尾
+        try {
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(containerEl);
+            range.collapse(false); // 折叠到末尾
+            selection.removeAllRanges();
+            selection.addRange(range);
+            console.log('无法恢复精确选区，已将光标放在编辑器末尾');
+            return true;
+        } catch (fallbackError) {
+            console.error('备用选区恢复也失败:', fallbackError);
+            return false;
         }
     }
 }
 
 // 插入Emoji
 function insertEmoji(emoji) {
+    console.log('开始插入表情:', emoji);
+    
     // 确保编辑器获得焦点
     editor.focus();
     
     // 创建文本节点
     const textNode = document.createTextNode(emoji);
     
-    // 获取当前选区
-    const selection = window.getSelection();
-    if (selection.rangeCount === 0) {
-        // 如果没有选区，在编辑器末尾插入
-        const range = document.createRange();
-        range.selectNodeContents(editor);
-        range.collapse(false);
+    try {
+        // 检查是否有保存的选区
+        if (!savedEditorSelection) {
+            console.log('没有保存的选区，尝试获取当前选区');
+            if (window.getSelection().rangeCount > 0) {
+                savedEditorSelection = saveSelection(editor);
+            }
+        }
+        
+        // 尝试恢复选区
+        let selectionRestored = false;
+        if (savedEditorSelection) {
+            selectionRestored = restoreSelection(editor, savedEditorSelection);
+            console.log('选区恢复状态:', selectionRestored);
+        }
+        
+        // 获取当前选区
+        const selection = window.getSelection();
+        let range;
+        
+        if (selection.rangeCount > 0) {
+            range = selection.getRangeAt(0);
+            
+            // 验证选区是否在编辑器内
+            let container = range.commonAncestorContainer;
+            let isInEditor = false;
+            
+            while (container) {
+                if (container === editor) {
+                    isInEditor = true;
+                    break;
+                }
+                container = container.parentNode;
+            }
+            
+            if (!isInEditor) {
+                console.log('选区不在编辑器内，创建新选区');
+                range = document.createRange();
+                range.selectNodeContents(editor);
+                range.collapse(false);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        } else {
+            console.log('没有活动选区，创建新选区');
+            range = document.createRange();
+            range.selectNodeContents(editor);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+        
+        // 获取最新的范围
+        range = selection.getRangeAt(0);
+        
+        // 删除任何选中的内容
+        range.deleteContents();
+        
+        // 插入表情
+        range.insertNode(textNode);
+        console.log('表情已插入到选区位置');
+        
+        // 将光标移动到表情后面
+        range.setStartAfter(textNode);
+        range.setEndAfter(textNode);
         selection.removeAllRanges();
         selection.addRange(range);
+        
+        // 保存新的选区位置
+        savedEditorSelection = saveSelection(editor);
+        console.log('新的选区位置已保存');
+        
+    } catch (error) {
+        console.error('插入表情时出错:', error);
+        
+        // 使用备用方法：在末尾插入
+        try {
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(editor);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            
+            range.insertNode(textNode);
+            range.setStartAfter(textNode);
+            range.setEndAfter(textNode);
+            console.log('使用备用方法在末尾插入表情');
+            
+            // 保存新的选区位置
+            savedEditorSelection = saveSelection(editor);
+        } catch (fallbackError) {
+            console.error('备用插入方法也失败:', fallbackError);
+            // 最后的尝试：直接追加到编辑器
+            editor.appendChild(textNode);
+            console.log('使用最后方法：直接追加到编辑器');
+        }
     }
     
-    const range = selection.getRangeAt(0);
-    range.deleteContents();
-    range.insertNode(textNode);
-    
-    // 将光标移动到emoji后面
-    range.setStartAfter(textNode);
-    range.setEndAfter(textNode);
-    selection.removeAllRanges();
-    selection.addRange(range);
+    // 隐藏表情选择器
+    const emojiPicker = document.getElementById('emoji-picker');
+    if (emojiPicker && emojiPicker.classList.contains('active')) {
+        emojiPicker.classList.remove('active');
+    }
     
     // 触发input事件以保存更改
     editor.dispatchEvent(new Event('input', {
         bubbles: true,
         cancelable: true
     }));
+    
+    // 确保编辑器保持焦点
+    editor.focus();
 }
 
 // 设置图片上传
