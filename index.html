@@ -196,7 +196,23 @@
         </div>
 
         <div class="note-list-container">
-            <h2>我的便签</h2>
+            <div class="note-list-header">
+                <h2>我的便签</h2>
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="搜索便签..." class="search-input">
+                    <button id="search-btn" class="search-btn"><i class="bi bi-search"></i></button>
+                    <button id="clear-search-btn" class="clear-search-btn" style="display: none;"><i class="bi bi-x"></i></button>
+                </div>
+            </div>
+            <div id="search-results" class="search-results" style="display: none;">
+                <div class="search-results-header">
+                    <span id="search-count">0</span> 个结果
+                    <button id="close-search-btn" class="close-btn"><i class="bi bi-x"></i></button>
+                </div>
+                <div id="search-results-list" class="search-results-list">
+                    <!-- 搜索结果将通过JavaScript动态生成 -->
+                </div>
+            </div>
             <div id="note-list" class="note-list">
                 <!-- 便签列表将通过JavaScript动态生成 -->
             </div>

@@ -117,6 +117,9 @@ function setupEventListeners() {
     // 设置图片上传
     setupImageUpload();
     
+    // 设置搜索功能
+    setupSearchFeature();
+    
     console.log('事件监听器设置完成');
 
     // Emoji选择器相关事件
@@ -1522,6 +1525,212 @@ function generateId() {
 
 // 辅助函数：去除HTML标签
 function stripHtml(html) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+}
+
+// 设置搜索功能
+function setupSearchFeature() {
+    console.log('设置搜索功能...');
+    
+    const searchInput = document.getElementById('search-input');
+    const searchBtn = document.getElementById('search-btn');
+    const clearSearchBtn = document.getElementById('clear-search-btn');
+    const closeSearchBtn = document.getElementById('close-search-btn');
+    const searchResults = document.getElementById('search-results');
+    const searchResultsList = document.getElementById('search-results-list');
+    const searchCount = document.getElementById('search-count');
+    
+    if (!searchInput || !searchBtn || !clearSearchBtn || !closeSearchBtn || !searchResults || !searchResultsList) {
+        console.error('搜索功能的必要元素未找到');
+        return;
+    }
+    
+    // 搜索输入框事件
+    searchInput.addEventListener('input', debounce(() => {
+        const query = searchInput.value.trim();
+        clearSearchBtn.style.display = query ? 'block' : 'none';
+        
+        if (query.length >= 1) {
+            performSearch(query);
+        } else {
+            closeSearchResults();
+        }
+    }, 300));
+    
+    // 搜索按钮点击事件
+    searchBtn.addEventListener('click', () => {
+        const query = searchInput.value.trim();
+        if (query) {
+            performSearch(query);
+        }
+    });
+    
+    // 回车触发搜索
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            const query = searchInput.value.trim();
+            if (query) {
+                performSearch(query);
+            }
+        }
+    });
+    
+    // 清除搜索
+    clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        clearSearchBtn.style.display = 'none';
+        closeSearchResults();
+    });
+    
+    // 关闭搜索结果
+    closeSearchBtn.addEventListener('click', closeSearchResults);
+    
+    // 搜索结果点击事件
+    searchResultsList.addEventListener('click', (e) => {
+        const resultItem = e.target.closest('.search-result-item');
+        if (resultItem) {
+            const noteId = resultItem.dataset.noteId;
+            if (noteId) {
+                loadNote(noteId);
+                closeSearchResults();
+            }
+        }
+    });
+}
+
+// 执行搜索
+function performSearch(query) {
+    console.log('执行搜索:', query);
+    
+    const searchResults = document.getElementById('search-results');
+    const searchResultsList = document.getElementById('search-results-list');
+    const searchCount = document.getElementById('search-count');
+    
+    if (!searchResults || !searchResultsList || !searchCount) {
+        console.error('搜索结果元素未找到');
+        return;
+    }
+    
+    // 转换查询为小写以进行不区分大小写的搜索
+    const queryLower = query.toLowerCase();
+    
+    // 搜索便签
+    const results = notes.filter(note => {
+        const titleLower = stripHtml(note.title).toLowerCase();
+        const contentLower = stripHtml(note.content).toLowerCase();
+        return titleLower.includes(queryLower) || contentLower.includes(queryLower);
+    });
+    
+    // 更新搜索结果计数
+    searchCount.textContent = results.length;
+    
+    // 显示搜索结果区域
+    searchResults.style.display = 'block';
+    
+    // 清空并重新填充结果列表
+    searchResultsList.innerHTML = '';
+    
+    if (results.length === 0) {
+        searchResultsList.innerHTML = '<div class="no-results">没有找到匹配的便签</div>';
+        return;
+    }
+    
+    // 渲染搜索结果
+    results.forEach(note => {
+        const resultItem = document.createElement('div');
+        resultItem.className = 'search-result-item';
+        resultItem.dataset.noteId = note.id;
+        
+        // 获取标题和内容的纯文本
+        const title = stripHtml(note.title);
+        const content = stripHtml(note.content);
+        
+        // 高亮显示匹配的文本
+        const highlightedTitle = highlightText(title, query);
+        const highlightedContent = highlightText(getContextAroundMatch(content, query), query);
+        
+        // 格式化日期
+        const date = new Date(note.lastModified);
+        const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+        
+        resultItem.innerHTML = `
+            <h3>${highlightedTitle}</h3>
+            <p>${highlightedContent}</p>
+            <div class="result-date">${formattedDate}</div>
+        `;
+        
+        searchResultsList.appendChild(resultItem);
+    });
+}
+
+// 关闭搜索结果
+function closeSearchResults() {
+    const searchResults = document.getElementById('search-results');
+    if (searchResults) {
+        searchResults.style.display = 'none';
+    }
+}
+
+// 高亮显示匹配的文本
+function highlightText(text, query) {
+    if (!query) return text;
+    const queryLower = query.toLowerCase();
+    const textLower = text.toLowerCase();
+    const parts = [];
+    let lastIndex = 0;
+    
+    let index = textLower.indexOf(queryLower);
+    while (index !== -1) {
+        // 添加不匹配的部分
+        if (index > lastIndex) {
+            parts.push(text.substring(lastIndex, index));
+        }
+        
+        // 添加高亮的匹配部分
+        parts.push(`<span class="highlight">${text.substring(index, index + query.length)}</span>`);
+        
+        lastIndex = index + query.length;
+        index = textLower.indexOf(queryLower, lastIndex);
+    }
+    
+    // 添加剩余的文本
+    if (lastIndex < text.length) {
+        parts.push(text.substring(lastIndex));
+    }
+    
+    return parts.join('');
+}
+
+// 获取匹配周围的上下文
+function getContextAroundMatch(text, query) {
+    const contextLength = 50; // 匹配前后显示的字符数
+    const index = text.toLowerCase().indexOf(query.toLowerCase());
+    
+    if (index === -1) {
+        // 如果没有找到匹配，返回开头的一部分文本
+        return text.substring(0, contextLength * 2) + (text.length > contextLength * 2 ? '...' : '');
+    }
+    
+    const start = Math.max(0, index - contextLength);
+    const end = Math.min(text.length, index + query.length + contextLength);
+    
+    let result = '';
+    if (start > 0) {
+        result += '...';
+    }
+    result += text.substring(start, end);
+    if (end < text.length) {
+        result += '...';
+    }
+    
+    return result;
+}
+
+// 辅助函数：清除HTML标签
+function stripHtml(html) {
+    if (!html) return '';
     const tmp = document.createElement('div');
     tmp.innerHTML = html;
     return tmp.textContent || tmp.innerText || '';
