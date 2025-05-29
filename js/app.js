@@ -964,7 +964,78 @@ function setupShareFeature() {
             }
         });
     }
+
+    // 导出Markdown文件
+    const saveMarkdownBtn = document.getElementById('save-markdown');
+    if (saveMarkdownBtn) {
+        saveMarkdownBtn.addEventListener('click', () => {
+            const note = notes.find(note => note.id === currentNoteId);
+            if (note) {
+                const markdown = htmlToMarkdown(note.content);
+                const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${note.title || 'note'}.md`;
+                link.click();
+                URL.revokeObjectURL(url);
+                showNotification('Markdown文件已下载');
+            }
+        });
+    }
+
+    // 导出PDF
+    const savePdfBtn = document.getElementById('save-pdf');
+    if (savePdfBtn) {
+        savePdfBtn.addEventListener('click', () => {
+            const note = notes.find(note => note.id === currentNoteId);
+            if (note) {
+                exportToPdf(previewContent, note.title);
+            }
+        });
+    }
     
+    // PDF导出功能
+    async function exportToPdf(content, title) {
+        try {
+            // 创建一个临时容器来设置PDF内容的样式
+            const container = document.createElement('div');
+            container.innerHTML = content.innerHTML;
+            container.style.padding = '20px';
+            container.style.color = '#000';
+            container.style.backgroundColor = '#fff';
+            
+            // 配置PDF选项
+            const opt = {
+                margin: [10, 10],
+                filename: `${title || 'note'}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2,
+                    useCORS: true,
+                    letterRendering: true
+                },
+                jsPDF: { 
+                    unit: 'mm', 
+                    format: 'a4', 
+                    orientation: 'portrait' 
+                }
+            };
+
+            // 显示加载提示
+            showNotification('正在生成PDF...');
+
+            // 生成PDF
+            await html2pdf().set(opt).from(container).save();
+            
+            // 显示成功提示
+            showNotification('PDF已生成并下载');
+        } catch (error) {
+            console.error('PDF生成失败:', error);
+            showNotification('PDF生成失败，请重试', 'error');
+        }
+    }
+
     // 保存为图片
     if (saveImageBtn) {
         saveImageBtn.addEventListener('click', () => {
